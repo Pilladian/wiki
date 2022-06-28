@@ -28,9 +28,24 @@ docker build -t localhost:5000/<image>:<version> -f Dockerfile .
 ```
 
 ## Push Images to Registry
-To push your built image use:
+To push your locally built image use:
 ```bash
 docker push localhost:5000/<image>:<version>
+```
+
+If you want to push your image that was built on another machine, We first need to tell docker that it is okay to push to our insecure registry (insecure, since we don't use https). We therefor need to edit/create `/etc/docker/daemon.json` on our machine and put the following content:
+```json
+{
+  "insecure-registries" : ["<DESKTOP-IP>:5000"]
+}
+```
+After saving the file restart the docker service and you're good to go!
+```bash
+# restart docker
+systemctl restart docker.service
+
+# push image to registry
+docker push <DESKTOP-IP>:5000/<image>:<version>
 ```
 
 ## Configure K3S to use Registry
