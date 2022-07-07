@@ -146,8 +146,6 @@ spec:
 
 You can now use the cluster issuer in your deployments like this:
 ```yaml
-
-```---
 # Ingress Object for exposing the webapp to traefik
 apiVersion: networking.k8s.io/v1
 kind: Ingress
