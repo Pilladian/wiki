@@ -9,29 +9,23 @@ sudo apt install python3-certbot-nginx
 ```
 
 ## Setup the Reverse Proxy
-We need to create a new file in `/etc/nginx/conf.d/` which we will call `reverse-proxy.conf`. Place the following content:
+We need to create a new file in `/etc/nginx/conf.d/` which we will call `DOMAIN.conf`. Place the following content:
 
 ```json
 # Domain 1
 server {
 	listen 80;
-	server_name DOMAIN_1;	
+	server_name DOMAIN;	
 	location / {
 		proxy_pass https://TARGET_IP/;
-		proxy_set_header Host DOMAIN_1;	
+		proxy_set_header Host $host;	
         proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
 	}
-}
-
-# Domain 2
-server {
-	listen 80;
-	server_name DOMAIN_2;	
-	location / {
-		proxy_pass https://TARGET_IP/;
-		proxy_set_header Host DOMAIN_2;	
-        proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+	if ($request_method !~ ^(GET|HEAD|POST)$ ) {
+		return 405; 
 	}
+	add_header X-Frame-Options "SAMEORIGIN";
+	add_header X-XSS-Protection "1; mode=block";
 }
 ```
 
@@ -46,6 +40,11 @@ http {
     ...
 }
 ```
+Now create a self signed certificate for our default ssl server and store it in `/etc/nginx/cert/`
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout localhost.key -out localhost.crt
+```
+
 Lastly replace `/etc/nginx/sites-available/default` with the following content:
 ```nginx
 server {
@@ -53,6 +52,16 @@ server {
     listen [::]:80 default_server;
     server_name _;
     return 200;
+}
+
+server {
+	listen 443 ssl default_server;
+	listen [::]:443 ssl default_server;
+	server_name _;
+	return 200;
+
+	ssl_certificate /etc/nginx/cert/localhost.crt;
+	ssl_certificate_key /etc/nginx/cert/localhost.key;
 }
 ```
 This modifies the default server, such that all requests that do not match your DOMAINS specified earlier get a 200 response without any content.
